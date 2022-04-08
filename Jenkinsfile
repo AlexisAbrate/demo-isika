@@ -47,6 +47,7 @@
                 echo '-=- Docker build -=-'
                 sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 docker stop demo-isika || true'
                 sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 docker rm demo-isika || true'
+                sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 docker rmi dockerabrate/demo-isika || true'
                 sh 'docker rmi dockerabrate/demo-isika || true'
             }
         }
@@ -93,7 +94,7 @@
             steps {
                 sh 'echo "Deploy into Prod"'
                 sh 'ssh -v -o StrictHostKeyChecking=no ubuntu@54.172.8.225 sudo docker stop demo-isika || true'
-                sh 'ssh -v -o StrictHostKeyChecking=no ubuntu@54.172.8.225 sudo docker rm demo-isika || true'
+                sh 'ssh -v -o StrictHostKeyChecking=no ubuntu@54.172.8.225 sudo docker rmi demo-isika || true'
                 sh 'ssh -v -o StrictHostKeyChecking=no ubuntu@54.172.8.225 sudo docker run -d --name demo-isika -p 8080:8080 dockerabrate/demo-isika'
                 
 
