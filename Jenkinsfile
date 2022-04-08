@@ -1,5 +1,10 @@
  pipeline {
     agent any
+    
+    environment {
+        DOCKERHUB_CREDENTIALS=credentials('dockerhub-credential')
+    }
+    
     stages {
         stage('Check out') {
             steps {
@@ -36,61 +41,72 @@
             }
         }
         
-        stage('Transfert file') {
-            steps {
-                script {
-                    sshPublisher(publishers: [
-                        sshPublisherDesc(configName: 'docker-host', transfers:[
-                            sshTransfer(
-                              sourceFiles:"target/*.jar",
-                              removePrefixe:"target",
-                              remoteDirectory:"//home//vagrant",
-                              execCommand:"ls /"
-                            ),
-                            
-                            sshTransfer(
-                              sourceFiles:"Dockerfile",
-                              removePrefixe:"",
-                              remoteDirectory:"//home//vagrant",
-                              execCommand:'''
-                              cd ~;
-                              sudo docker build -t demo-isika .;
-                              sudo docker run -d --name demo-isika -p 8080:8080 demo-isika;
-                              '''
-                            )
-                            
-                        ])
-                    ])                
-                }
-                echo 'Transfert fait'
-            }
-        }
         
         stage('Cleaning project image and container') {
             steps {
                 echo '-=- Docker build -=-'
-                sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 sudo docker stop demo-isika || true'
-                sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 sudo docker rm demo-isika || true'
-                sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 sudo docker rmi demo-isika || true'
+                sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 docker stop demo-isika || true'
+                sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 docker rm demo-isika || true'
+                sh 'docker rmi demo-isika || true'
             }
         }
         
         stage('Construct image') {
             steps {
                 echo '-=- Docker build -=-'
-                sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 sudo docker build -t demo-isika .'
+                sh 'docker build -t demo-isika .'
             }
         }
         
-        
-        
-        stage('Run container') {
+        stage('Tag') {
             steps {
-                echo '-=- Deploy project -=-'
-                sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 sudo docker run -d --name demo-isika -p 8080:8080 demo-isika'
+                echo '-=- Docker run -=-'
+                sh 'docker tag demo-isika dockerabrate/demo-isika'
             }
         }
         
+        stage('Login to Docker Hub') {
+            steps {
+                echo '-=- Login DH -=-'
+                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            steps {
+                echo '-=- Login DH -=-'
+                sh 'docker push dockerabrate/demo-isika'
+            }
+        }
+        
+        stage('Run container to local') {
+            steps {
+                echo '-=- Run Container -=-'
+                sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 sudo docker run -d --name demo-isika -p 8080:8080 dockerabrate/demo-isika'
+            }
+        }
+        
+        stage ('Deploy To AWS'){
+              input{
+                message "Do you want to proceed for production deployment?"
+              }
+            steps {
+                sh 'echo "Deploy into Prod"'
+                sh 'ssh -v -o StrictHostKeyChecking=no ubuntu@54.172.8.225 sudo docker stop demo-isika || true'
+                sh 'ssh -v -o StrictHostKeyChecking=no ubuntu@54.172.8.225 sudo docker rm demo-isika || true'
+                sh 'ssh -v -o StrictHostKeyChecking=no ubuntu@54.172.8.225 sudo docker run -d --name demo-isika -p 8080:8080 dockerabrate/demo-isika'
+                
+
+            }
+        }
+
+        
+    }
+    
+    post {
+        always {
+            sh 'docker logout'
+        }
     }
         
 }
