@@ -4,7 +4,7 @@
         stage('Check out') {
             steps {
                 echo '-=- Checkout project -=-'
-                git branch: 'master', url:'https://github.com/Deercut/demo-isika.git'
+                git branch: 'master', url:'https://github.com/AlexisAbrate/demo-isika.git'
             }
         }
          stage('Compile') {
