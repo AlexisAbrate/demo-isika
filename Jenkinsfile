@@ -47,7 +47,7 @@
                 echo '-=- Docker build -=-'
                 sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 docker stop demo-isika || true'
                 sh 'ssh -v -o StrictHostKeyChecking=no vagrant@192.168.33.20 docker rm demo-isika || true'
-                sh 'docker rmi demo-isika || true'
+                sh 'docker rmi dockerabrate/demo-isika || true'
             }
         }
         
